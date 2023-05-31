@@ -26,9 +26,10 @@ jobs:
       - name: Count Lines Of Code
         id: loc
         run: |
-          sudo apt install cloc
+          curl -sLO https://github.com/AlDanial/cloc/releases/download/v1.96/cloc-1.96.tar.gz && \
+          tar xf cloc-1.96.tar.gz && mv cloc-1.96/clocl .
           tmp_out=$(mktemp)
-          cloc --include-ext=py --by-file --diff base/code pr/code | \
+          ./cloc --include-ext=py --by-file --diff base/code pr/code | \
           grep "File\|SUM" -A4 | sed '2,7d;s/^\s*//g' | tr -s ' ' | tr ' ' '|' | sed 's/File/LOC/1' > "$tmp_out"
 
           # pseudo rand EOF value
