@@ -1,6 +1,8 @@
 name: cloc
 on:
   pull_request:
+    branches:
+    - main
 
 # Cancel the workflow in progress in newer build is about to start.
 concurrency:
