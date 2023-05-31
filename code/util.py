@@ -1,3 +1,3 @@
 
 def a_util_func():
-  return
+  return 42
