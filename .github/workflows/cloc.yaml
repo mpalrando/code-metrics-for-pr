@@ -1,0 +1,40 @@
+name: cloc
+on:
+  pull_request:
+
+# Cancel the workflow in progress in newer build is about to start.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  cloc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: pr
+      - name: Checkout base code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+      - name: Count Lines Of Code
+        id: loc
+        run: |
+          sudo apt update && sudo apt install cloc
+          CONTENT=$(cloc --include-ext=py  --by-file --diff base/code pr/code | grep "File\|SUM" -A4 | sed '3,6d;s/File/    /g')
+          echo "{loc_content}=${CONTENT}" >> $GITHUB_OUTPUT
+
+      - name: Comment Code Lines
+        continue-on-error: true
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: LOC
+          message: |
+            ### Lines Of Code
+
+            ${{ env.loc_content }}
+
