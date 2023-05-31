@@ -24,7 +24,8 @@ jobs:
         id: loc
         run: |
           sudo apt install cloc
-          echo "{loc_content}={$(cloc --include-ext=py  --by-file --diff base/code pr/code | grep "File\|SUM" -A4 | sed '3,6d;s/File/    /g;s/-/=/g')}" >> $GITHUB_OUTPUT
+          #echo "{loc_content}={$(cloc --include-ext=py  --by-file --diff base/code pr/code | grep "File\|SUM" -A4 | sed '3,6d;s/File/    /g;s/-/=/g')}" >> $GITHUB_OUTPUT
+          echo "{loc_content}={GA-sucks}" >> $GITHUB_OUTPUT
 
       - name: Comment Code Lines
         continue-on-error: true
