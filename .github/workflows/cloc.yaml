@@ -24,7 +24,7 @@ jobs:
         id: loc
         run: |
           sudo apt install cloc
-          CONTENT=$(cloc --include-ext=py  --by-file --diff base/code pr/code | grep "File\|SUM" -A4 | sed '3,6d;s/File/    /g')
+          CONTENT=$(cloc --include-ext=py  --by-file --diff base/code pr/code | grep "File\|SUM" -A4 | sed '3,6d;s/File/    /g;s/-/=/g')
           echo "{loc_content}=${CONTENT}" >> $GITHUB_OUTPUT
 
       - name: Comment Code Lines
