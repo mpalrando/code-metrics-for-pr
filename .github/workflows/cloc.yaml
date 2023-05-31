@@ -9,9 +9,9 @@ concurrency:
 
 jobs:
   cloc:
-    # permissions:
-    #   contents: read
-    #   pull-requests: write
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
