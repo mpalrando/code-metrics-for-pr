@@ -3,6 +3,8 @@ on:
   pull_request_target:
     branches:
     - main
+    types:
+    - ready_for_review
 
 # Cancel the workflow in progress in newer build is about to start.
 concurrency:
