@@ -36,14 +36,15 @@ jobs:
       - name: Count Lines Of Code
         id: loc
         run: |
-
+          pip install tabulate
           # pseudo rand EOF value
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "loc_content<<$EOF" >> "$GITHUB_ENV"
-          echo "base LOC"
-          ./sz.py >> "$GITHUB_ENV"
-          echo "PR LOC"
-          ./sz.py >> "$GITHUB_ENV"
+          echo "base LOC" >> "$GITHUB_ENV"
+          cd /base && ./sz.py >> "$GITHUB_ENV"
+          echo "PR LOC" "$GITHUB_ENV"
+          rm ./pr/sz.py && cp ./base/sz.py ./pr/
+          cd /pr && ./sz.py >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
       - name: Comment Code Lines
