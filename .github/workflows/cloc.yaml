@@ -9,10 +9,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
-env:
-  TARGET: "code"
-  EXT: "py"
-
 jobs:
   cloc:
     permissions:
@@ -32,20 +28,18 @@ jobs:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
       - name: Count Lines Of Code
-        id: loc
+        id: compare-loc
         run: |
           pip install tabulate
           BASE="$GITHUB_WORKSPACE/base"
           PR="$GITHUB_WORKSPACE/pr"
 
+          cp "$BASE/sz.py" .
+          cp "$BASE/.github/workflows/sz-compare.py" .
+
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "loc_content<<$EOF" >> "$GITHUB_ENV"
-          echo "base LOC" >> "$GITHUB_ENV"
-          cd "$BASE" && ./sz.py >> "$GITHUB_ENV"
-          echo "" >> "$GITHUB_ENV"
-          echo "PR LOC" >> "$GITHUB_ENV"
-          cp "$BASE/sz.py" "$PR"
-          cd "$PR" && ./sz.py >> "$GITHUB_ENV"
+          ./sz-compare.py "$BASE" "$PR" >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
       - name: Comment Code Lines
