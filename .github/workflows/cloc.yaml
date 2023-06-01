@@ -27,10 +27,14 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.base.sha }}
           path: base
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
       - name: Count Lines Of Code
-        id: compare-loc
         run: |
           pip install tabulate
+
           BASE="$GITHUB_WORKSPACE/base"
           PR="$GITHUB_WORKSPACE/pr"
 
