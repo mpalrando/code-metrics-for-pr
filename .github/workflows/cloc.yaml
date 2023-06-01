@@ -45,18 +45,18 @@ jobs:
           echo ":---|---:|---:|---:|---:" >> "$GITHUB_ENV"
 
           # cloc diff bewteen base and PR code and pretty format
-          ./cloc --include-ext="$EXT" --diff "base/$TARGET" "pr/$TARGET" | \
-          grep "Python" -A4 | sed '1d;s/^\s*//g' | tr -s ' ' | tr ' ' '|' > cloc-out
+          content=$(./cloc --include-ext="$EXT" --diff "base/$TARGET" "pr/$TARGET" | \
+            grep "Python" -A4 | sed '1d;s/^\s*//g' | tr -s ' ' | tr ' ' '|')
+          echo "$content" >> "$GITHUB_ENV"
 
           # calculate total after PR
           total_line="total"
           for i in 2 3 4 5; do
               total_line="$total_line|"
-              sum=$(cat clock-out | cut -d'|' -f"$i" | paste -sd+ | bc)
+              sum=$(echo "$content" | cut -d'|' -f"$i" | paste -sd+ | bc)
               total_line="$total_line$sum"
           done
-          echo "$total_line" >> clock-out
-          cat cloc-out >> "$GITHUB_ENV"
+          echo "$total_line" >> "$GITHUB_ENV"
 
           echo "$EOF" >> "$GITHUB_ENV"
 
