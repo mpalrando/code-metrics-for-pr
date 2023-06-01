@@ -3,8 +3,6 @@ on:
   pull_request_target:
     branches:
     - main
-    types:
-    - ready_for_review
 
 # Cancel the workflow in progress in newer build is about to start.
 concurrency:
@@ -37,14 +35,17 @@ jobs:
         id: loc
         run: |
           pip install tabulate
-          # pseudo rand EOF value
+          BASE="$GITHUB_WORKSPACE/base"
+          PR="$GITHUB_WORKSPACE/pr"
+
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "loc_content<<$EOF" >> "$GITHUB_ENV"
           echo "base LOC" >> "$GITHUB_ENV"
-          cd $GITHUB_WORKSPACE/base && ./sz.py >> "$GITHUB_ENV"
+          cd "$BASE" && ./sz.py >> "$GITHUB_ENV"
+          echo "" >> "$GITHUB_ENV"
           echo "PR LOC" >> "$GITHUB_ENV"
-          rm $GITHUB_WORKSPACE/pr/sz.py && cp $GITHUB_WORKSPACE/base/sz.py $GITHUB_WORKSPACE/pr/
-          cd $GITHUB_WORKSPACE/pr && ./sz.py >> "$GITHUB_ENV"
+          cp "$BASE/sz.py" "$PR"
+          cd "$PR" && ./sz.py >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
       - name: Comment Code Lines
