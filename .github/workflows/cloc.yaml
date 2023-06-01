@@ -34,6 +34,7 @@ jobs:
       - name: Count Lines Of Code
         id: loc
         run: |
+          sudo apt install bc
           curl -sLO https://github.com/AlDanial/cloc/releases/download/v1.96/cloc-1.96.tar.gz && \
           tar xf cloc-1.96.tar.gz && mv cloc-1.96/cloc .
 
@@ -42,8 +43,21 @@ jobs:
           echo "loc_content<<$EOF" >> "$GITHUB_ENV"
           echo "LOC|files|blank|comment|code" >> "$GITHUB_ENV"
           echo ":---|---:|---:|---:|---:" >> "$GITHUB_ENV"
+
+          # cloc diff bewteen base and PR code and pretty format
           ./cloc --include-ext="$EXT" --diff "base/$TARGET" "pr/$TARGET" | \
-          grep "SUM" -A4 | sed '1d;s/^\s*//g' | tr -s ' ' | tr ' ' '|' >> "$GITHUB_ENV"
+          grep "Python" -A4 | sed '1d;s/^\s*//g' | tr -s ' ' | tr ' ' '|' > cloc-out
+
+          # calculate total after PR
+          total_line="total"
+          for i in 2 3 4 5; do
+              total_line="$total_line|"
+              sum=$(cat clock-out | cut -d'|' -f"$i" | paste -sd+ | bc)
+              total_line="$total_line$sum"
+          done
+          echo "$total_line" >> clock-out
+          cat cloc-out >> "$GITHUB_ENV"
+
           echo "$EOF" >> "$GITHUB_ENV"
 
       - name: Comment Code Lines
