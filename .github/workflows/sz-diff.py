@@ -28,5 +28,5 @@ if __name__ == '__main__':
     dirs.append([dir_name, group, f'{diff:+}' if diff != 0 else ""])
 
   print(tabulate(files, headers=headers, floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
-  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"])+"\n")
+  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], colalign=("left", "right", "right")+"\n")
   print(f"total line count: {pr_loc} ({pr_loc-base_loc:+})")
