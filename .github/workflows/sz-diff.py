@@ -27,7 +27,8 @@ if __name__ == '__main__':
 
   dirs = []
   for dir_name, group in sorted(pr_dirs.items(), key=lambda x: -x[1]):
-    dirs.append([dir_name, group, f'{group-base_dirs.get(dir_name, 0):+}'])
+    diff = group-base_dirs.get(dir_name, 0)
+    dirs.append([dir_name, group, f'{diff:+}' if diff != 0 else ""])
 
   print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], floatfmt=".1f", tablefmt="github")+"\n")
   print(f"total line count: {total_pr} ({total_pr-total_base:+})")
