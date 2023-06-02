@@ -1,4 +1,4 @@
-name: cloc
+name: sz.py
 on:
   pull_request_target:
     branches:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  cloc:
+  sz.py:
     permissions:
       contents: read
       pull-requests: write

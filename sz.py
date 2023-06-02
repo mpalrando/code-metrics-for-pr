@@ -21,7 +21,7 @@ def print_stats(data):
 
 def gen_stats(base_path=""):
     table = []
-    for path, subdirs, files in os.walk(os.path.join(base_path, "code")):
+    for path, subdirs, files in os.walk(os.path.join(base_path, "tinygrad")):
         for name in files:
             if not name.endswith(".py"):
                 continue

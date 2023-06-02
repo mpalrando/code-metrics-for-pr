@@ -23,11 +23,11 @@ if __name__ == '__main__':
   deleted = [[x[0], x[1], x[2], f'{-x[1]:+}', "D"] for x in base if x[0] not in pr_ff]
   files += deleted
 
-  print(tabulate([headers] + files, headers="firstrow", floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
+  print(tabulate([headers] + files, headers="firstrow", floatfmt=".1f", colalign=("left", "right", "right", "right", "right"), tablefmt="github")+"\n")
 
   dirs = []
   for dir_name, group in sorted(pr_dirs.items(), key=lambda x: -x[1]):
     dirs.append([dir_name, group, f'{group-base_dirs.get(dir_name, 0):+}'])
 
-  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], floatfmt=".1f")+"\n")
+  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], floatfmt=".1f", tablefmt="github")+"\n")
   print(f"total line count: {total_pr} ({total_pr-total_base:+})")
