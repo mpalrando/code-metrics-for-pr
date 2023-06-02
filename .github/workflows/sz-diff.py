@@ -6,9 +6,9 @@ from tabulate import tabulate
 
 if __name__ == '__main__':
   base, pr = gen_stats(sys.argv[1]), gen_stats(sys.argv[2])
+  base_files, pr_files = {x[0]: x for x in base}, {x[0]: x for x in pr}
   pr_dirs = {x[0].rsplit("/", 1)[0]: x[1] for x in pr}
   base_dirs = {x[0].rsplit("/", 1)[0]: x[1] for x in base}
-  base_files, pr_files = {x[0]: x for x in base}, {x[0]: x for x in pr}
   base_loc, pr_loc = sum(x[1] for x in base), sum(x[1] for x in pr)
 
   headers = ["File", "Lines", "Tokens/Line", "Diff", ""]
@@ -27,6 +27,6 @@ if __name__ == '__main__':
     diff = group-base_dirs.get(dir_name, 0)
     dirs.append([dir_name, group, f'{diff:+}' if diff != 0 else ""])
 
-  print(tabulate([headers] + files, headers="firstrow", floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
-  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], floatfmt=".1f")+"\n")
+  print(tabulate(files, headers=headers, floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
+  print(tabulate(dirs, headers=["Dir", "Lines", "Diff"])+"\n")
   print(f"total line count: {pr_loc} ({pr_loc-base_loc:+})")
