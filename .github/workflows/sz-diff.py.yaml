@@ -39,11 +39,11 @@ jobs:
           PR="$GITHUB_WORKSPACE/pr"
 
           cp "$BASE/sz.py" .
-          cp "$BASE/.github/workflows/sz-compare.py" .
+          cp "$BASE/.github/workflows/sz-diff.py" .
 
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
           echo "loc_content<<$EOF" >> "$GITHUB_ENV"
-          ./sz-compare.py "$BASE" "$PR" >> "$GITHUB_ENV"
+          ./sz-diff.py "$BASE" "$PR" >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
       - name: Comment Code Lines

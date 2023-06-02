@@ -17,7 +17,7 @@ if __name__ == '__main__':
   for x in pr:
     if x[0] in base_ff:
       diff = x[1]-base_ff[x[0]][1]
-      files.append([x[0], x[1], x[2], f'{diff:+}' if diff > 0 else "", "M" if diff > 0 else ""])
+      files.append([x[0], x[1], x[2], f'{diff:+}' if diff != 0 else "", "M" if diff != 0 else ""])
     else:
       files.append([x[0], x[1], x[2], f'{x[1]:+}', "A"])
   deleted = [[x[0], x[1], x[2], f'{-x[1]:+}', "D"] for x in base if x[0] not in pr_ff]
