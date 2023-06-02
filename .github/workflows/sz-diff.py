@@ -11,7 +11,6 @@ if __name__ == '__main__':
   base_dirs = {x[0].rsplit("/", 1)[0]: x[1] for x in base}
   base_loc, pr_loc = sum(x[1] for x in base), sum(x[1] for x in pr)
 
-  headers = ["File", "Lines", "Tokens/Line", "Diff", ""]
   files = []
   for x in pr:
     if x[0] in base_files:
@@ -27,6 +26,6 @@ if __name__ == '__main__':
     diff = group-base_dirs.get(dir_name, 0)
     dirs.append([dir_name, group, f'{diff:+}' if diff != 0 else ""])
 
-  print(tabulate(files, headers=headers, floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
+  print(tabulate(files, headers=["File", "Lines", "Tokens/Line", "Diff", ""], floatfmt=".1f", colalign=("left", "right", "right", "right", "right"))+"\n")
   print(tabulate(dirs, headers=["Dir", "Lines", "Diff"], colalign=("left", "right", "right")+"\n")
   print(f"total line count: {pr_loc} ({pr_loc-base_loc:+})")
