@@ -16,7 +16,6 @@ class LocalBuffer(NamedTuple):
   dtype: DType = dtypes.float32
   realized: None = None
 
-# NOTE: half and half4 are not actually used yet
 class LocalTypes(Enum): float = auto(); float4 = auto(); half = auto(); half4 = auto(); simdgroup_float8x8 = auto() # noqa: E702
 
 class Token(NamedTuple):
@@ -32,48 +31,6 @@ class Token(NamedTuple):
     return self.name+"."+"xyzw"[int(self.offset)]
   def __repr__(self): return f"<{self.name}>" if self.offset is None and self.ltype == LocalTypes.float else f"<{self.name}:{self.ltype.name}:{self.offset}>"
 
-# TODO: the next three functions are poorly written
-def get_grouped_float4_idxs(acc:List[Token]) -> Optional[List[int]]:
-  idxs: Optional[List[int]] = []
-  for i,a in enumerate(acc):
-    if idxs is None: break
-    if i in idxs: continue
-    if a.ltype == LocalTypes.float4 and a.offset == 0:
-      idxs.append(i)
-      friends: List[int] = []
-      for j,b in enumerate(acc):
-        if len(friends) == 3: break
-        if j in idxs: continue
-        if a.name == b.name and b.ltype == LocalTypes.float4 and b.offset == len(friends)+1:
-          friends.append(j)
-      if len(friends) == 3: idxs += friends
-      else: idxs = None
-    else:
-      idxs = None
-  return idxs
-
-def to_float4(x:List[Token]) -> Optional[Token]:
-  if all_same(x): return x[0]
-  if all_same([y.name for y in x]) and all([y.ltype == LocalTypes.float4 and y.offset == i for i,y in enumerate(x)]):
-    return Token(x[0].name, LocalTypes.float4)
-  return None
-
-def get_grouped_maybe_float4(*values:List[Token], grouping_allowed=True):
-  assert all_same([len(x) for x in values]), f"all values are not the same length {values}"
-  # these use accumulators, we can only fold if the acc is a float4
-  idxs = get_grouped_float4_idxs(values[0]) if grouping_allowed else None
-  if idxs is not None:
-    new_idxs = []
-    new_values = []
-    for i in range(0, len(idxs), 4):
-      nv = [to_float4([v[j] for j in idxs[i:i+4]]) for v in values]
-      if any([x is None for x in nv]): break
-      new_idxs.append(idxs[i:i+4])
-      new_values.append(nv)
-    if len(new_values) == len(idxs)//4:
-      return zip(new_idxs, new_values)
-  return zip([[i] for i in range(len(values[0]))], zip(*values))
-
 class MemOp(NamedTuple):
   i: int
   idx: Variable
@@ -88,7 +45,6 @@ class UOp(NamedTuple):
 
 class Linearizer:
   supports_float4: bool = False
-  supports_float4_alu: bool = False
 
   def __init__(self, ast:LazyOp, output_buffer:LazyBuffer):
     # NOTE: if there's a RESHAPE, we skip it. the output shape is set from the reduce op or a latebuf
@@ -142,7 +98,7 @@ class Linearizer:
     if DEBUG >= 5: self.printbufs("early")
 
   def shape_offsets(self, i): return itertools.product(*[list(range(s)) for s in self.sts[i].shape[self.shape_len-self.upcasted:][::-1]]) if self.upcasted > 0 else [tuple()]
-  def float4_axis(self, i): return [x-(self.shape_len-self.upcasted) for x in self.sts[i].unit_stride_axes() if x >= self.shape_len-self.upcasted and self.sts[i].shape[x]%4 == 0]
+  def float4_axis(self, i): return [x-(self.shape_len-self.upcasted) for x in self.sts[i].unit_stride_axes() if x >= self.shape_len-self.upcasted and self.sts[i].shape[x] == 4]
 
   # TODO: this stride is only on the last view, and may not be real
   def upcasted_axis(self, i):
@@ -159,11 +115,11 @@ class Linearizer:
     store_offset_float4 = {}
     float4_axis = (self.upcasted-1) - self.float4_axis(i)[0]
     for uidxs, var in store_offset.items():
-      if uidxs[float4_axis]%4 == 0:
+      if uidxs[float4_axis] == 0:
         store_offset_float4[uidxs] = [var]
       else:
         uidxs2 = list(uidxs)
-        uidxs2[float4_axis] -= uidxs2[float4_axis]%4
+        uidxs2[float4_axis] = 0
         store_offset_float4[tuple(uidxs2)].append(var)
     return store_offset_float4
 
@@ -171,7 +127,7 @@ class Linearizer:
     load_offset: Dict[Tuple[int, ...], Any] = {uidxs:(LocalTypes.float,uidxs)+self.sts[i].expr_idxs(idxs+[Variable.num(x) for x in uidxs[::-1]]) for uidxs in self.shape_offsets(i)}
 
     # float4 grouping (optional)
-    should_upcast = self.supports_float4 and len(self.float4_axis(i)) == 1
+    should_upcast = self.supports_float4 and self.bufs[i].dtype != dtypes.float16 and len(self.float4_axis(i)) == 1
     if should_upcast:
       load_offset_new = {}
       for k,out_tokens in self._group_float4(i, load_offset).items():
@@ -198,18 +154,18 @@ class Linearizer:
         loaded[uidxs] = cache[key]
     return [loaded[uidxs] for uidxs in self.shape_offsets(i)]
 
-  def global_store(self, i, idxs:List[Variable], store:List[Token], ssa) -> None:
+  def global_store(self, i, idxs:List[Variable], store=List[Token]) -> None:
     store_offset: Dict[Tuple[int, ...], Token] = dict(zip(self.shape_offsets(i), store))
 
     # float4 grouping (optional)
-    should_upcast = self.supports_float4 and (self.bufs[i].dtype not in (dtypes.float16, dtypes.int8, dtypes.uint8)) and len(self.float4_axis(i)) == 1
+    should_upcast = self.supports_float4 and self.bufs[i].dtype != dtypes.float16 and len(self.float4_axis(i)) == 1
     if should_upcast:
       store_offset_new = {}
       for k,out_tokens in self._group_float4(i, store_offset).items():
         if all_same([x.name for x in out_tokens]) and tuple(range(4)) == tuple(x.offset for x in out_tokens):
           store_offset_new[k] = Token(out_tokens[0].name, LocalTypes.float4)
         else:
-          store_offset_new[k] = self.uop(UOps.CAST, ssa("alu", LocalTypes.float4), out_tokens)
+          store_offset_new[k] = self.uop(UOps.CAST, Token(out_tokens[0].name+"_f4", LocalTypes.float4), out_tokens)
       store_offset = store_offset_new
 
     # do stores
@@ -283,7 +239,7 @@ class Linearizer:
 
       # end the local loop, do the local reduce
       if self.group_for_reduce:
-        self.global_store(-1, local_idxs+fake_reduce_idxs, acc, ssa)  # store accumulators
+        self.global_store(-1, local_idxs+fake_reduce_idxs, acc)  # store accumulators
         self.uop(UOps.ENDLOOP, None, [], (local_idxs, "local"))   # this is a barrier on GPUs
 
         # if any group_for_reduce items aren't reduces, upcast them here
@@ -318,7 +274,7 @@ class Linearizer:
     val = self.ast_parse(self.ast, acc, loaded_buffers, ssa)
 
     # store
-    self.global_store(0, global_idxs[:removed]+fake_reduce_idxs, val, ssa)
+    self.global_store(0, global_idxs[:removed]+fake_reduce_idxs, val)
 
     # end the global loop
     self.uop(UOps.ENDLOOP, None, [], (global_idxs, "global"))
@@ -339,18 +295,10 @@ class Linearizer:
     if x.op == ReduceOps.SUM and isinstance(x.src[0], LazyOp) and x.src[0].op == UnaryOps.CAST and isinstance(x.src[0].src[0], LazyOp) and x.src[0].src[0].op == BinaryOps.MUL:
       x = LazyOp(FusedOps.MULACC, x.src[0].src[0].src, x.arg)
     values = [self.ast_parse(v, acc, loaded_buffers, ssa) for v in x.src]
-    # TODO: fold float4 into a single uop when possible.
     if isinstance(x.op, (ReduceOps, FusedOps)):
-      ret = [(idx, self.uop(UOps.ALU, val[0], list(val), {ReduceOps.SUM:BinaryOps.ADD, ReduceOps.MAX:BinaryOps.MAX, FusedOps.MULACC:FusedOps.MULACC}[x.op])) for idx, val in get_grouped_maybe_float4(acc, *values, grouping_allowed=self.supports_float4_alu)]
+      return [self.uop(UOps.ALU, val[0], list(val), {ReduceOps.SUM:BinaryOps.ADD, ReduceOps.MAX:BinaryOps.MAX, FusedOps.MULACC:FusedOps.MULACC}[x.op]) for val in zip(acc, *values)]
     else:
-      ret = [(idx, self.uop(UOps.ALU, ssa('alu', LocalTypes.float4) if any(x.ltype == LocalTypes.float4 and x.offset is None for x in val) else ssa('alu'), list(val), x.op)) for idx, val in get_grouped_maybe_float4(*values, grouping_allowed=self.supports_float4_alu and x.op!=BinaryOps.CMPEQ)]
-    ordered_ret: List[Optional[Token]] = [None]*len(values[0])
-    # scatter
-    for i,j in ret:
-      for o,k in enumerate(i):
-        ordered_ret[k] = Token(j.name, j.ltype, o) if j.ltype == LocalTypes.float4 else j
-    assert all(isinstance(x, Token) for x in ordered_ret), "some tokens didn't get scattered?"
-    return cast(List[Token], ordered_ret)
+      return [self.uop(UOps.ALU, ssa('alu'), list(val), x.op) for val in zip(*values)]
 
   @property
   def first_reduce(self) -> int: return [x!=y for x,y in zip(self.sts[0].shape[:self.shape_len-self.upcasted]+(0,), self.full_shape[:self.shape_len-self.upcasted]+(1,))].index(True)
@@ -512,13 +460,6 @@ class Linearizer:
       else:
         break
 
-    # if last dim <= 16 and it's a reduce dim, upcast the reduce (loop unrolling). no simplify needed since it's just an upcast. NOTE: careful, this has broken VALIDHACKS
-    if self.first_reduce < (self.shape_len-self.upcasted) and (len(list(self.shape_offsets(self.full_buf_index))) <= 4 or not any(r for _,_,r in self.upcasted_axis(self.full_buf_index))):
-      if self.full_unupcasted_shape[-1] <= 16:
-        self.upcast()
-      else:
-        for splits in [4]:
-          if self.full_unupcasted_shape[-1]%splits == 0:
-            self.shift_to(len(self.full_unupcasted_shape)-1, splits, insert_before=len(self.full_unupcasted_shape))
-            self.upcast()
-            break
+    # if last dim <= 5 and it's a reduce dim, upcast the reduce (loop unrolling). no simplify needed since it's just an upcast. NOTE: careful, this has broken VALIDHACKS
+    if self.first_reduce < (self.shape_len-self.upcasted) and self.full_unupcasted_shape[-1] <= 5 and (len(list(self.shape_offsets(self.full_buf_index))) <= 4 or not any(r for _,_,r in self.upcasted_axis(self.full_buf_index))):
+      self.upcast()

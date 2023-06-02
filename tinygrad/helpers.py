@@ -20,24 +20,7 @@ def mnum(i) -> str: return str(i) if i >= 0 else f"m{-i}"
 @functools.lru_cache(maxsize=None)
 def getenv(key, default=0): return type(default)(os.getenv(key, default))
 
-class Context:
-  def __init__(self, **kwargs): self.pvars = kwargs
-  def __enter__(self): ContextVar.ctx_stack.append({ **self.pvars, **{ key: ContextVar.ctx_stack[-1][key] for key in ContextVar.ctx_stack[-1].keys() if key not in self.pvars } })
-  def __exit__(self, *args): ContextVar.ctx_stack.pop()
-
-class ContextVar:
-  ctx_stack: ClassVar[List[dict[str, Any]]] = [{}]
-  def __init__(self, key, default_value):
-    self.key, self.initial_value = key, getenv(key, default_value)
-    if key not in ContextVar.ctx_stack[-1]: ContextVar.ctx_stack[-1][key] = self.initial_value
-  def __call__(self, x): ContextVar.ctx_stack[-1][self.key] = x
-  def __bool__(self): return self.value != 0
-  def __ge__(self, x): return self.value >= x
-  def __gt__(self, x): return self.value > x
-  @property
-  def value(self): return ContextVar.ctx_stack[-1][self.key] if self.key in ContextVar.ctx_stack[-1] else self.initial_value
-
-DEBUG, IMAGE = ContextVar("DEBUG", 0), ContextVar("IMAGE", 0)
+DEBUG, IMAGE = getenv("DEBUG", 0), getenv("IMAGE", 0)
 
 # **** tinygrad now supports dtypes! *****
 
@@ -59,29 +42,20 @@ class ImageDType(DType):
 
 class LazyNumpyArray:
   def __init__(self, fxn, shape, dtype): self.fxn, self.shape, self.dtype = fxn, shape, dtype
-  def __call__(self) -> np.ndarray: return np.require(self.fxn(self) if callable(self.fxn) else self.fxn, dtype=self.dtype, requirements='C').reshape(self.shape)
+  def __call__(self) -> np.ndarray: return np.ascontiguousarray(self.fxn(self) if callable(self.fxn) else self.fxn).reshape(self.shape).astype(self.dtype)
   def reshape(self, new_shape): return LazyNumpyArray(self.fxn, new_shape, self.dtype)
-  def copy(self): return self if callable(self.fxn) else LazyNumpyArray(self.fxn, self.shape, self.dtype)
+  def copy(self): return self if callable(self.fxn) else LazyNumpyArray(self.fxn.copy(), self.shape, self.dtype)
   def astype(self, typ): return LazyNumpyArray(self.fxn, self.shape, typ)
 
 
 @dataclass
 class dtypes:
-  @staticmethod # static methds on top, or bool in the type info will refer to dtypes.bool
-  def is_int(x: DType)-> bool: return x in (dtypes.int8, dtypes.uint8, dtypes.int32, dtypes.int64)
-  @staticmethod
-  def is_float(x: DType) -> bool: return x in (dtypes.float16, dtypes.float32)
-  @staticmethod
-  def is_unsigned(x: DType) -> bool: return x in (dtypes.uint8)
-  @staticmethod
-  def from_np(x) -> DType: return asdict(dtypes())[np.dtype(x).name]
-  bool: Final[DType] = DType(0, 1, "bool", bool)
   float16: Final[DType] = DType(0, 2, "half", np.float16)
   float32: Final[DType] = DType(1, 4, "float", np.float32)
-  int8: Final[DType] = DType(0, 1, "char", np.int8)
   int32: Final[DType] = DType(1, 4, "int", np.int32)
   int64: Final[DType] = DType(2, 8, "int64", np.int64)
-  uint8: Final[DType] = DType(0, 1, "uchar", np.uint8)
+  @staticmethod
+  def from_np(x) -> DType: return asdict(dtypes())[np.dtype(x).name]
 
 
 class GlobalCounters:
