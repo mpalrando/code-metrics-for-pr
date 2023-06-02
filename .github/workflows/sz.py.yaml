@@ -1,4 +1,4 @@
-name: sz.py
+name: sz-diff
 on:
   pull_request_target:
     branches:
@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sz.py:
+  sz-diff:
     permissions:
       contents: read
       pull-requests: write
