@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import sys
 import os
 import token
 import tokenize
@@ -31,5 +30,4 @@ def gen_stats(base_path="."):
     return sorted(table, key=lambda x: -x[1])
 
 if __name__ == "__main__":
-    path = sys.argv[1] if len(sys.argv) > 1 else "."
-    print_stats(gen_stats(path))
+    print_stats(gen_stats())
