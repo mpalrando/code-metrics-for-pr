@@ -6,7 +6,7 @@ on:
     types:
     - ready_for_review
     paths:
-    - 'tinygrad/**.py'
+    - 'tinygrad/**'
 
 # Cancel the workflow in progress in newer build is about to start.
 concurrency:
