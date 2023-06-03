@@ -1,5 +1,8 @@
 name: sz-diff
 on:
+  push:
+    paths:
+    - 'tinygrad/**.py'
   pull_request_target:
     branches:
     - main
@@ -20,6 +23,8 @@ jobs:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
+      - uses: jwalton/gh-find-current-pr@v1
+        id: finder
       - name: Checkout code
         uses: actions/checkout@v2
         with:
@@ -56,6 +61,7 @@ jobs:
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           recreate: true
+          number: ${{ steps.finder.outputs.pr }}
           header: LOC
           message: |
             ### Lines Of Code
