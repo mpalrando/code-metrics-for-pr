@@ -1,10 +1,13 @@
 name: sz-diff
 on:
   pull_request_target:
+    types:
+    - opened
+    - synchronize
+    - reopened
+    - ready_for_review
     branches:
     - main
-    types:
-    - ready_for_review
     paths:
     - 'tinygrad/**'
 
@@ -15,6 +18,7 @@ concurrency:
 
 jobs:
   sz-diff:
+    if: github.event.pull_request_target.draft == false
     permissions:
       contents: read
       pull-requests: write
