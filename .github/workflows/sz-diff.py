@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
   modified = [[x[0], x[1], x[2], x[1]-base_files[x[0]][1], "M"] for x in pr if x[0] in base_files]
   modified = [[x[0], x[1], x[2], f'{x[3]:+}', x[4]] if x[3] != 0 else [x[0], x[1], x[2], "", ""] for x in modified]
-  added = [[x[0], x[1], x[2], x[1], "A"] for x in pr if x[0] not in base_files]
+  added = [[x[0], x[1], x[2], f'{x[1]:+}', "A"] for x in pr if x[0] not in base_files]
   deleted = [[x[0], x[1], x[2], f'{-x[1]:+}', "D"] for x in base if x[0] not in pr_files]
   files = modified+added+deleted
 
