@@ -8,8 +8,7 @@ from tabulate import tabulate
 TOKEN_WHITELIST = [token.OP, token.NAME, token.NUMBER, token.STRING]
 
 def print_stats(data):
-    headers = ["Name", "Lines", "Tokens/Line"]
-    print(tabulate([headers] + data, headers="firstrow", floatfmt=".1f")+"\n")
+    print(tabulate(data, headers=["Name", "Lines", "Tokens/Line"], floatfmt=".1f")+"\n")
 
     for dir_name, group in itertools.groupby(sorted([(x[0].rsplit("/", 1)[0], x[1]) for x in data]), key=lambda x: x[0]):
         print(f"{dir_name:30s} : {sum([x[1] for x in group]):6d}")
