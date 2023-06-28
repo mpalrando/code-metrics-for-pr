@@ -6,7 +6,7 @@ from tabulate import tabulate
 
 
 class Ref:
-  def __init__(self: str, files: list[FileStats]):
+  def __init__(self, files: list[FileStats]):
     self.files = files
     self.files_set = dict({f.name: f for f in files})
     self.dirs_set = dict({f.dir: f for f in files})
