@@ -62,7 +62,7 @@ jobs:
           recreate: true
           header: LOC
           message: |
-            ### Lines Of Code
+            ### Changes
             ```
             ${{ env.loc_content }}
             ```
