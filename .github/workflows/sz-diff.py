@@ -60,7 +60,7 @@ if __name__ == '__main__':
   diff = RefDiff(base, pr, unchanged=False)
 
   print(diff.changes_table(), "\n")
-  print(f"total line count: {diff.base_total_lc} ({diff.pr_total_lc-diff.base_total_lc:+})")
+  print(f"total line count: {diff.pr_total_lc} ({diff.pr_total_lc-diff.base_total_lc:+})")
 
   if diff.pr_total_lc < diff.base_total_lc:
     sys.exit(1)

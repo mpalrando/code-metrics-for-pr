@@ -23,7 +23,7 @@ def print_stats(data):
   files_dict = [f.format() for f in data]
   print(tabulate(files_dict, headers="keys", floatfmt=".1f") + "\n")
 
-  for dir_name, dir_group in groupby(sorted([(f.name, f.lines_count) for f in data]), key=lambda x: x[0]):
+  for dir_name, dir_group in groupby(sorted([(f.dir, f.lines_count) for f in data]), key=lambda x: x[0]):
     print(f"{dir_name:30s} : {sum([f[1] for f in dir_group]):6d}")
 
   print(f"\ntotal line count: {sum([x.lines_count for x in data])}")
