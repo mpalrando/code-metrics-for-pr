@@ -65,7 +65,7 @@ if __name__ == '__main__':
   diff = RefDiff(base, pr, unchanged=False)
 
   print(diff.files_diff_table(), "\n")
-  print(f"total line count: {diff.total_loc()} ({diff.diff_loc()}:+)")
+  print(f"total line count: {diff.total_loc()} ({diff.diff_loc():+})")
 
   if diff.diff_loc() < 0:
     sys.exit(1)
