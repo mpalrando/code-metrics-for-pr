@@ -4,7 +4,6 @@ import sys
 from sz import gen_stats, FileStats
 from tabulate import tabulate
 
-
 class RefDiff:
   def __init__(self, base: list[FileStats], pr: list[FileStats], unchanged=False):
     self.base_files, self.pr_files = base, pr
@@ -22,7 +21,7 @@ class RefDiff:
   def format(self, files: list[dict], op: str):
     return [{**f, **{"diff": f'{f["diff"]:+}', "op": op}} for f in files]
 
-  def changes_table(self):
+  def files_diff_table(self):
     changes = (self.format(self._modified, "M")
                + self.format(self._added, "A")
                + self.format(self._deleted, "D"))
@@ -54,14 +53,20 @@ class RefDiff:
         files.append({**f.format(), **{"diff": -f.lines_count}})
     return files
 
+  def total_loc(self):
+    return self.pr_total_lc
+
+  def diff_loc(self):
+    return self.pr_total_lc - self.base_total_lc
+
 
 if __name__ == '__main__':
   base, pr = gen_stats(sys.argv[1]), gen_stats(sys.argv[2])
   diff = RefDiff(base, pr, unchanged=False)
 
-  print(diff.changes_table(), "\n")
-  print(f"total line count: {diff.pr_total_lc} ({diff.pr_total_lc-diff.base_total_lc:+})")
+  print(diff.files_diff_table(), "\n")
+  print(f"total line count: {diff.total_loc()} ({diff.diff_loc()})")
 
-  if diff.pr_total_lc < diff.base_total_lc:
+  if diff.diff_loc() < 0:
     sys.exit(1)
   sys.exit(0)
